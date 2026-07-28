@@ -1,0 +1,56 @@
+{
+    "name": "particle-academy/teachers-aid",
+    "description": "Teachers Aid Chat (TAC) — an authoring agent that reads course material and proposes curriculum, course and test changes for review. LLM-library agnostic.",
+    "keywords": [
+        "laravel",
+        "ai",
+        "agent",
+        "courses",
+        "curriculum",
+        "authoring",
+        "particle-academy"
+    ],
+    "homepage": "https://github.com/Particle-Academy/teachers-aid",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/support": "^13.0",
+        "illuminate/validation": "^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.0"
+    },
+    "suggest": {
+        "particle-academy/laravel-courses": "The course schema these tools are shaped for. Not required — entities are host-configured, so any Eloquent models work.",
+        "particle-academy/prism": "Ships the Prism chat driver (the default). Any other LLM library works by implementing ChatDriver.",
+        "particle-academy/last-word": "Extract text from .docx course material",
+        "particle-academy/holy-sheet": "Extract text from .xlsx/.csv question banks",
+        "particle-academy/dark-slide": "Extract text from .pptx training decks"
+    },
+    "autoload": {
+        "psr-4": {
+            "ParticleAcademy\\TeachersAid\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ParticleAcademy\\TeachersAid\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ParticleAcademy\\TeachersAid\\TeachersAidServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
