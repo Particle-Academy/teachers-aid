@@ -27,6 +27,9 @@ class PlanApplier
     /** entity name => model class */
     private array $entities;
 
+    /** @var array<string, bool> table => has an is_published column */
+    private array $publishable = [];
+
     public function __construct(?array $entities = null)
     {
         $this->entities = $entities ?? (array) config('teachers-aid.entities', []);
@@ -93,15 +96,36 @@ class PlanApplier
      */
     private function create(string $class, ChangeOperation $op, array $attributes, array &$refs): void
     {
-        // Draft, always. See the class docblock.
-        $attributes['is_published'] = false;
-
         /** @var Model $model */
+        $model = new $class();
+
+        // Draft, always — but only where "published" is a thing. Lessons,
+        // questions and options have no is_published column; forcing the
+        // attribute on them fails the insert on a column that does not exist.
+        if ($this->isPublishable($model)) {
+            $attributes['is_published'] = false;
+        }
+
         $model = $class::query()->create($attributes);
 
         if ($op->ref !== null) {
             $refs[$op->ref] = (int) $model->getKey();
         }
+    }
+
+    /**
+     * Whether this entity has something to publish.
+     *
+     * Memoised per table: the applier runs inside one transaction and a schema
+     * lookup per operation would make a large plan noticeably slower.
+     */
+    private function isPublishable(Model $model): bool
+    {
+        $table = $model->getTable();
+
+        return $this->publishable[$table] ??= $model->getConnection()
+            ->getSchemaBuilder()
+            ->hasColumn($table, 'is_published');
     }
 
     /**

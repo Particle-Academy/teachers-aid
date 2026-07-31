@@ -23,8 +23,16 @@ php artisan vendor:publish --tag=teachers-aid-config   # config/teachers-aid.php
 
 ```php
 // AppServiceProvider::register()
-$this->app->bind(ChatDriver::class, fn () => new YourDriver(/* ... */));
+use ParticleAcademy\TeachersAid\Contracts\ChatDriver;
+use ParticleAcademy\TeachersAid\Drivers\PrismChatDriver;
+
+$this->app->bind(ChatDriver::class, fn () => new PrismChatDriver(
+    provider: config('teachers-aid.drivers.prism.provider'),
+    model: config('teachers-aid.drivers.prism.model'),
+));
 ```
+
+`PrismChatDriver` ships with the package and needs `particle-academy/prism`. Any other library is one class — see [Writing a driver](#writing-a-driver).
 
 ## Use
 
@@ -60,7 +68,7 @@ The agent holds no repository, no model and no connection. There is no code path
 | Property | Why |
 |---|---|
 | **All or nothing** | One transaction. A half-built course is worse than no course. |
-| **Never publishes** | `is_published` is forced `false` on create and stripped on update, whatever the plan says. A human publishes — approving a draft and putting it in front of learners are different decisions. |
+| **Never publishes** | `is_published` is forced `false` on create and stripped on update, whatever the plan says — on the entities that have the column. Lessons, questions and options do not, and forcing it on them would fail the insert. A human publishes; approving a draft and putting it in front of learners are different decisions. |
 | **Forward references** | `$course1` in a later operation resolves to the id created earlier in the same plan. |
 
 Forward references are what let one turn produce a whole course:
@@ -88,6 +96,8 @@ interface ChatDriver
 ```
 
 **The multi-step tool loop lives in the agent, not the driver.** Every LLM library has its own idea of agentic looping and step limits; if each driver brought its own, TAC would behave differently depending on what was underneath. `send()` is one model call.
+
+One wrinkle worth knowing if you write your own: some libraries own tool execution outright. Prism runs its tool closures on every `tool_use` response *before* it checks the step limit, so `PrismChatDriver` hands it deliberately inert closures and reads the requested calls off the response instead. Putting real behaviour in those closures would execute tools inside the driver and silently defeat the approval guarantee.
 
 ## Files
 

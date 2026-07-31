@@ -102,6 +102,21 @@ class ProposeThenApplyTest extends TestCase
         $this->assertFalse((bool) FakeCourse::query()->sole()->is_published);
     }
 
+    public function test_an_entity_without_an_is_published_column_still_applies(): void
+    {
+        // Not every entity has something to publish — lessons, questions and
+        // options do not. Forcing the attribute anyway fails the insert on a
+        // column that does not exist, which reads as "the plan was bad" when
+        // the plan was fine.
+        $plan = new ChangePlan();
+        $plan->add(ChangeOperation::create('course', ['title' => 'Patrol Basics'], 'c1'));
+        $plan->add(ChangeOperation::create('lesson', ['course_id' => '$c1', 'title' => 'Observation']));
+
+        (new PlanApplier())->apply($plan);
+
+        $this->assertSame('Observation', FakeLesson::query()->sole()->title);
+    }
+
     public function test_an_update_cannot_publish_either(): void
     {
         $course = FakeCourse::query()->create(['title' => 'Existing', 'is_published' => false]);

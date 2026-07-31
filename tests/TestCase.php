@@ -18,7 +18,10 @@ abstract class TestCase extends Orchestra
 
     protected function getPackageProviders($app): array
     {
-        return [TeachersAidServiceProvider::class];
+        return [
+            \Prism\Prism\PrismServiceProvider::class,
+            TeachersAidServiceProvider::class,
+        ];
     }
 
     protected function defineEnvironment($app): void
@@ -46,13 +49,16 @@ abstract class TestCase extends Orchestra
             $t->timestamps();
         });
 
+        // Deliberately WITHOUT is_published, mirroring laravel-courses: a lesson
+        // is published by publishing its course. An applier that assumes every
+        // entity has the column dies on the insert, so the fixture has to be as
+        // uneven as the real schema.
         Schema::create('lessons', function (Blueprint $t): void {
             $t->id();
             $t->unsignedBigInteger('course_id');
             $t->string('title');
             $t->longText('content')->nullable();
             $t->unsignedInteger('sort_order')->default(0);
-            $t->boolean('is_published')->default(false);
             $t->timestamps();
         });
     }
