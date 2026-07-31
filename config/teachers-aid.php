@@ -76,6 +76,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Conversation window
+    |--------------------------------------------------------------------------
+    |
+    | How much prior conversation to replay, in characters. Extracted file text
+    | is folded into the turn that uploaded it, so a transcript grows far faster
+    | than the typing suggests — without a bound, a couple of large uploads push
+    | past the context window and every later turn fails on a provider error
+    | that looks nothing like its cause. Oldest turns are dropped first.
+    |
+    */
+    'history' => [
+        'max_chars' => (int) env('TEACHERS_AID_HISTORY_MAX_CHARS', 300_000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Uploads
     |--------------------------------------------------------------------------
     */
