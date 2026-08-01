@@ -63,6 +63,10 @@ $refs = app(PlanApplier::class)->apply($plan);  // ref => new id
 
 The agent holds no repository, no model and no connection. There is no code path from a tool call to a write — so a confused model, **or a prompt injection hidden inside an uploaded file**, still cannot change anything. The approval step is enforced by the object graph, not by the system prompt.
 
+> **Gate the route that invokes `PlanApplier`.** The applier writes through Eloquent, the same layer `EnrollmentService` and `CertificateService` write at — so it deliberately does **not** consult `laravel-courses`' `AuthorizesCourseAdmin`, which gates the HTTP layer. That is the correct layering, not a hole: a host calling these from a console command, a queue job or a seeder has already decided. But it does mean **authorization is the host's job here**. Put the apply endpoint behind your admin middleware. GuardCard's sits behind `['auth', 'admin']`.
+>
+> Don't hand the applier a faked `Request` to make it consult the contract — a check that looks like enforcement but isn't is worse than no check.
+
 `PlanApplier` adds three guarantees:
 
 | Property | Why |
