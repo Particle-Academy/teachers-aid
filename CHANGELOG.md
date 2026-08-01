@@ -10,6 +10,10 @@ upgrading.
 
 ## [Unreleased]
 
+## 0.1.0 — 2026-08-01
+
+**First published release.** The TAC authoring agent: reads course material and *proposes* curriculum changes. LLM-library agnostic behind a single `ChatDriver` seam. Propose-then-apply is structural — tools hold no model, repository or connection, so there is no code path from a tool call to a write; `PlanApplier` is the only writer and never publishes.
+
 ### Added
 
 - **CI** — matching the rest of the Fancy kit.
