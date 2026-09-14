@@ -1,5 +1,7 @@
 # particle-academy/teachers-aid
 
+[![Fancified](art/fancified.svg)](https://particle.academy)
+
 Teachers Aid Chat (**TAC**) — an authoring agent that reads course material and **proposes** curriculum, course and test changes for a human to review.
 
 Two things make this package what it is:
