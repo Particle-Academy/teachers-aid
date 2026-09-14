@@ -22,7 +22,7 @@
     },
     "require-dev": {
         "orchestra/testbench": "^11.0",
-        "particle-academy/prism": "^0.111",
+        "particle-academy/prism": "0.123",
         "phpunit/phpunit": "^12.0"
     },
     "suggest": {
