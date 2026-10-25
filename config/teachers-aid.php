@@ -5,6 +5,7 @@ declare(strict_types=1);
 use ParticleAcademy\LaravelCourses\Models\Course;
 use ParticleAcademy\LaravelCourses\Models\Curriculum;
 use ParticleAcademy\LaravelCourses\Models\Lesson;
+use ParticleAcademy\LaravelCourses\Models\Module;
 use ParticleAcademy\LaravelCourses\Models\Question;
 use ParticleAcademy\LaravelCourses\Models\QuestionOption;
 use ParticleAcademy\LaravelCourses\Models\Test;
@@ -68,10 +69,26 @@ return [
     'entities' => [
         'curriculum'      => Curriculum::class,
         'course'          => Course::class,
+        'module'          => Module::class,
         'lesson'          => Lesson::class,
         'test'            => Test::class,
         'question'        => Question::class,
         'question_option' => QuestionOption::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Links a plan may make or break
+    |--------------------------------------------------------------------------
+    |
+    | Entity => [relation method => related entity]. Many-to-many only — a
+    | lesson's course is a field (course_id), not a link. Anything absent here
+    | cannot be attached or detached, and no other relation method is ever
+    | called from a plan.
+    |
+    */
+    'relations' => [
+        'curriculum' => ['courses' => 'course'],
     ],
 
     /*

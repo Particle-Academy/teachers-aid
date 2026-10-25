@@ -10,11 +10,11 @@ running against stand-in models with laravel-courses absent.
 
 ## Two properties that are structural, not conventions
 
-**1. Propose-then-apply.** The six tools — `propose_curriculum`,
-`propose_course`, `propose_lesson`, `propose_test`, `propose_question`,
-`propose_update` — hold **no model, no repository, no connection**. There is no
-code path from a tool call to a write. `PlanApplier` is the only writer, it
-takes a `ChangePlan`, and it never publishes.
+**1. Propose-then-apply.** The `propose_*` tools append to a `ChangePlan` and
+hold **no writer**. They and the `catalog_*` read tools go through
+`Support\EntityCatalog`, which builds queries and never saves — eyes, not hands.
+There is no code path from a tool call to a write. `PlanApplier` is the only
+writer, it takes a `ChangePlan`, and it never publishes.
 
 That matters because the input is untrusted by construction: TAC reads uploaded
 handbooks, decks and spreadsheets. **A prompt injection inside an uploaded file
@@ -22,10 +22,14 @@ still cannot change anything** — the worst it can do is produce a bad *proposa
 a human then rejects. Do not "simplify" this by handing a tool a repository.
 
 **2. LLM-library agnostic.** Agent, tools and plan model import no LLM library.
-One seam — `Contracts\ChatDriver` — and `PrismChatDriver` is the concrete one
-that ships. **The multi-step tool loop lives in `TeachersAid`, not the driver**,
-so behaviour is identical whichever library a host swaps in. Keep the loop out
-of drivers.
+Two ways to run it, and the TOOLS are the same objects in both:
+
+- `TeachersAid::respondTo()` — the loop here, over a `Contracts\ChatDriver`.
+  **The loop lives in `TeachersAid`, not the driver**, so behaviour is identical
+  whichever library a host swaps in. Keep the loop out of drivers.
+- A runtime that owns the loop (prism-harness): `tools($plan)` + `systemPrompt()`,
+  each tool made runnable by `Drivers\PrismTools::live()`. `PrismTools::inert()`
+  is the driver's flavour — there TeachersAid runs the handler, so Prism must not.
 
 ## The shape
 
@@ -59,12 +63,20 @@ Message (+ Attachment) → TeachersAid::respondTo() → TurnResult
   used to be invisible, so an enrollment could report complete with it unpassed.
   Fixed upstream rather than worked around here.)
 - **Never let a driver own the tool loop.** See above.
+- **Check proposals when they are made.** A wrong field, id or `$ref` is
+  answered `Refused: …` to the model so it can fix it in the conversation.
+  Recording it anyway only moves the failure to the Apply button, where the
+  model can no longer revise anything.
+- **Config is the blast radius.** `entities` bounds what can be touched,
+  `relations` what can be linked; a relation name from a plan is never called
+  unless configured. `GuardsDeletion` lets the host veto a delete — asked at
+  proposal AND at apply, because an enrollment can arrive in between.
 
 ## Testing
 
 ```bash
 composer install
-vendor/bin/phpunit          # 27 tests / 64 assertions
+vendor/bin/phpunit          # 42 tests
 ```
 
 The suite runs with **laravel-courses absent**, against stand-in models. That is

@@ -17,6 +17,8 @@ final class ChangeOperation
     public const CREATE = 'create';
     public const UPDATE = 'update';
     public const DELETE = 'delete';
+    public const ATTACH = 'attach';
+    public const DETACH = 'detach';
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -52,6 +54,33 @@ final class ChangeOperation
         return new self(self::DELETE, $entity, [], $id, null, $summary);
     }
 
+    /**
+     * Link two records through a many-to-many relation — a course into a
+     * curriculum, say. Either side may be a "$ref" to a record created earlier
+     * in the plan, which is why the owner travels in the attributes rather than
+     * in `id`: an id is only ever a real one.
+     *
+     * @param  array<string, mixed>  $pivot
+     */
+    public static function attach(string $entity, int|string $owner, string $relation, int|string $related, array $pivot = [], ?string $summary = null): self
+    {
+        return new self(self::ATTACH, $entity, array_filter([
+            'owner'    => $owner,
+            'relation' => $relation,
+            'related'  => $related,
+            'pivot'    => $pivot,
+        ], static fn ($v) => $v !== []), null, null, $summary);
+    }
+
+    public static function detach(string $entity, int|string $owner, string $relation, int|string $related, ?string $summary = null): self
+    {
+        return new self(self::DETACH, $entity, [
+            'owner'    => $owner,
+            'relation' => $relation,
+            'related'  => $related,
+        ], null, null, $summary);
+    }
+
     /** A one-line description for the review UI. */
     public function describe(): string
     {
@@ -65,8 +94,20 @@ final class ChangeOperation
             self::CREATE => "Create {$this->entity}".($what ? ": {$what}" : ''),
             self::UPDATE => "Update {$this->entity} #{$this->id}".($what ? ": {$what}" : ''),
             self::DELETE => "Delete {$this->entity} #{$this->id}",
+            self::ATTACH => "Add {$this->relationTarget()} to {$this->entity} {$this->label($this->attributes['owner'] ?? null)}",
+            self::DETACH => "Remove {$this->relationTarget()} from {$this->entity} {$this->label($this->attributes['owner'] ?? null)}",
             default      => "{$this->action} {$this->entity}",
         };
+    }
+
+    private function relationTarget(): string
+    {
+        return ($this->attributes['relation'] ?? 'record').' '.$this->label($this->attributes['related'] ?? null);
+    }
+
+    private function label(mixed $idOrRef): string
+    {
+        return is_string($idOrRef) && str_starts_with($idOrRef, '$') ? $idOrRef : '#'.$idOrRef;
     }
 
     /**
@@ -80,6 +121,10 @@ final class ChangeOperation
             'attributes'  => $this->attributes,
             'id'          => $this->id,
             'ref'         => $this->ref,
+            // The raw summary as well as the rendered description: fromArray()
+            // reads `summary`, and without it a stored plan came back with
+            // every reviewer note ("— duplicate of #4") silently dropped.
+            'summary'     => $this->summary,
             'description' => $this->describe(),
         ], static fn ($v) => $v !== null && $v !== []);
     }

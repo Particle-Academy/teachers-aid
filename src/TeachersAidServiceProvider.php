@@ -12,6 +12,9 @@ use ParticleAcademy\TeachersAid\Attachments\SlidesExtractor;
 use ParticleAcademy\TeachersAid\Attachments\SpreadsheetExtractor;
 use ParticleAcademy\TeachersAid\Attachments\WordExtractor;
 use ParticleAcademy\TeachersAid\Contracts\ChatDriver;
+use ParticleAcademy\TeachersAid\Contracts\GuardsDeletion;
+use ParticleAcademy\TeachersAid\Support\AllowAllDeletes;
+use ParticleAcademy\TeachersAid\Support\EntityCatalog;
 use ParticleAcademy\TeachersAid\Plan\PlanApplier;
 
 class TeachersAidServiceProvider extends ServiceProvider
@@ -27,14 +30,26 @@ class TeachersAidServiceProvider extends ServiceProvider
             new SlidesExtractor(),
         ]));
 
-        $this->app->singleton(PlanApplier::class);
+        // No veto by default — the applier deleted whatever a plan named before
+        // this seam existed. A host binds its own to protect records.
+        $this->app->bindIf(GuardsDeletion::class, AllowAllDeletes::class);
+
+        $this->app->bind(EntityCatalog::class, fn () => new EntityCatalog());
+
+        $this->app->singleton(PlanApplier::class, fn ($app) => new PlanApplier(
+            deletions: $app->make(GuardsDeletion::class),
+        ));
 
         // No default ChatDriver binding. The host chooses its LLM library, and a
         // wrong guess here would be worse than a clear "you must bind one" —
         // silently talking to the wrong provider is expensive in both senses.
         $this->app->bind(TeachersAid::class, fn ($app) => new TeachersAid(
-            $app->make(ChatDriver::class),
+            // Lazily: a host that runs TAC through prism-harness asks this
+            // class for its tools and prompt and never binds a driver.
+            fn () => $app->make(ChatDriver::class),
             (int) config('teachers-aid.max_steps', 8),
+            $app->make(EntityCatalog::class),
+            $app->make(GuardsDeletion::class),
         ));
     }
 

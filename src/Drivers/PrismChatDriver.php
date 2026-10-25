@@ -11,7 +11,6 @@ use ParticleAcademy\TeachersAid\Chat\ToolCall;
 use ParticleAcademy\TeachersAid\Chat\ToolDefinition;
 use ParticleAcademy\TeachersAid\Contracts\ChatDriver;
 use Prism\Prism\Facades\Prism;
-use Prism\Prism\Schema\RawSchema;
 use Prism\Prism\Tool as PrismTool;
 use Prism\Prism\ValueObjects\Media\Document;
 use Prism\Prism\ValueObjects\Media\Image;
@@ -233,31 +232,9 @@ class PrismChatDriver implements ChatDriver
         return $mapped;
     }
 
-    /**
-     * Our JSON Schema, unchanged, as a Prism tool.
-     *
-     * RawSchema is what makes this lossless: Prism's fluent withStringParameter()
-     * builders cannot express everything JSON Schema can (nested arrays of
-     * objects, for one, which propose_question needs).
-     */
+    /** Our JSON Schema, unchanged, as a Prism tool — inert on purpose, see the class docblock. */
     private function mapTool(ToolDefinition $definition): PrismTool
     {
-        $tool = (new PrismTool())
-            ->as($definition->name)
-            ->for($definition->description)
-            // Inert on purpose. See the class docblock.
-            ->using(static fn (): string => 'recorded');
-
-        $properties = (array) ($definition->parameters['properties'] ?? []);
-        $required = (array) ($definition->parameters['required'] ?? []);
-
-        foreach ($properties as $name => $schema) {
-            $tool->withParameter(
-                new RawSchema((string) $name, (array) $schema),
-                in_array($name, $required, true),
-            );
-        }
-
-        return $tool;
+        return PrismTools::inert($definition);
     }
 }

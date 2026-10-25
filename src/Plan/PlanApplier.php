@@ -6,6 +6,7 @@ namespace ParticleAcademy\TeachersAid\Plan;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use ParticleAcademy\TeachersAid\Contracts\GuardsDeletion;
 use ParticleAcademy\TeachersAid\Exceptions\PlanApplicationException;
 
 /**
@@ -27,12 +28,19 @@ class PlanApplier
     /** entity name => model class */
     private array $entities;
 
+    /** entity name => [relation method => related entity name] */
+    private array $relations;
+
     /** @var array<string, bool> table => has an is_published column */
     private array $publishable = [];
 
-    public function __construct(?array $entities = null)
-    {
+    public function __construct(
+        ?array $entities = null,
+        ?array $relations = null,
+        private readonly ?GuardsDeletion $deletions = null,
+    ) {
         $this->entities = $entities ?? (array) config('teachers-aid.entities', []);
+        $this->relations = $relations ?? (array) config('teachers-aid.relations', []);
     }
 
     /**
@@ -85,6 +93,8 @@ class PlanApplier
             ChangeOperation::CREATE => $this->create($class, $op, $attributes, $refs),
             ChangeOperation::UPDATE => $this->update($class, $op, $attributes),
             ChangeOperation::DELETE => $this->delete($class, $op),
+            ChangeOperation::ATTACH,
+            ChangeOperation::DETACH => $this->link($class, $op, $attributes),
             default => throw new PlanApplicationException("Unknown action [{$op->action}]."),
         };
     }
@@ -158,8 +168,65 @@ class PlanApplier
     {
         $model = $class::query()->find($op->id);
 
-        // Already gone is the desired end state, so this is not an error.
-        $model?->delete();
+        if ($model === null) {
+            // Already gone is the desired end state, so this is not an error.
+            return;
+        }
+
+        // Asked again here, not only when proposed: an enrollment may have
+        // arrived between the proposal and the click.
+        $refusal = $this->deletions?->refusal($op->entity, $model);
+
+        if ($refusal !== null) {
+            throw new PlanApplicationException("{$op->entity} #{$op->id} cannot be deleted: {$refusal}");
+        }
+
+        $model->delete();
+    }
+
+    /**
+     * Attach or detach through a many-to-many relation.
+     *
+     * Only relations named in `teachers-aid.relations` are reachable, for the
+     * same reason only configured entities are: the config is the blast
+     * radius. A relation name from a plan is never called otherwise.
+     *
+     * @param  class-string<Model>  $class
+     * @param  array<string, mixed>  $attributes  owner/related already resolved from refs
+     */
+    private function link(string $class, ChangeOperation $op, array $attributes): void
+    {
+        $relation = (string) ($attributes['relation'] ?? '');
+        $relatedEntity = $this->relations[$op->entity][$relation] ?? null;
+
+        if ($relatedEntity === null) {
+            throw new PlanApplicationException(
+                "[{$op->entity}.{$relation}] is not a configured relation. Add it to config('teachers-aid.relations')."
+            );
+        }
+
+        $owner = $class::query()->find($attributes['owner'] ?? null);
+
+        if ($owner === null) {
+            throw new PlanApplicationException("{$op->entity} #".($attributes['owner'] ?? '?').' no longer exists.');
+        }
+
+        $relatedClass = $this->entities[$relatedEntity] ?? null;
+        $relatedId = $attributes['related'] ?? null;
+
+        if ($relatedClass === null || ! $relatedClass::query()->whereKey($relatedId)->exists()) {
+            throw new PlanApplicationException("{$relatedEntity} #{$relatedId} no longer exists.");
+        }
+
+        if ($op->action === ChangeOperation::DETACH) {
+            $owner->{$relation}()->detach($relatedId);
+
+            return;
+        }
+
+        // syncWithoutDetaching: adding a course that is already there updates
+        // its pivot rather than failing on the unique key or duplicating it.
+        $owner->{$relation}()->syncWithoutDetaching([$relatedId => (array) ($attributes['pivot'] ?? [])]);
     }
 
     /**

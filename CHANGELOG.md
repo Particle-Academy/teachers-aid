@@ -10,6 +10,49 @@ upgrading.
 
 ## [Unreleased]
 
+## 0.3.0 — 2026-10-24
+
+TAC can now manage an existing catalog, not just add to it, and can be run by
+a runtime that owns the tool loop (prism-harness).
+
+### Added
+
+- **Read tools** — `catalog_overview`, `catalog_search`, `catalog_get`. Before
+  these the agent had no way to learn an id, so "rename the Trespass course"
+  became a proposal to create a second one. They read and never write.
+- **More proposals** — `propose_module`, `propose_create` (any configured
+  entity), `propose_delete`, `propose_attach` / `propose_detach` (e.g. a course
+  into a curriculum). `propose_course` takes delivery mode, price, hours,
+  attendance hours and highlights; `propose_test` attaches to a course, module
+  or lesson; `propose_lesson` takes a module.
+- `ChangeOperation::attach()` / `detach()`, applied through relations named in
+  the new `teachers-aid.relations` config — the blast radius for links, as
+  `entities` is for records.
+- **`GuardsDeletion`** — a host veto over deletes, asked when the delete is
+  proposed and again when it is applied. The default allows everything, which
+  is what the applier always did.
+- `TeachersAid::tools(ChangePlan)`, `systemPrompt()`, `prompt()` and
+  `TOOL_NAMES`, so a runtime that owns the loop can run TAC; `PrismTools::live()`
+  turns a tool into a Prism tool that does the work. Pass the pending plan to
+  `tools()` to keep building on it across turns.
+- `module` in the default `entities` config.
+
+### Changed
+
+- **Proposals are checked when made.** A field the entity does not have, an id
+  that does not exist, `is_published`, a reused `ref` or a `$ref` nothing
+  created is answered "Refused: …" to the model, instead of being recorded and
+  failing when the teacher presses Apply. An entity missing from `entities` is
+  refused the same way — **if your config omits `question`, `propose_question`
+  now refuses rather than recording an operation that could never apply.**
+- `TeachersAid`'s driver is optional and may be a closure; only `respondTo()`
+  needs one.
+- `propose_lesson` no longer forces `content_type: text`; the column default
+  applies.
+
+Propose-then-apply is unchanged: every tool that changes anything still only
+records a proposal, and `PlanApplier` is still the only writer.
+
 ## 0.2.0 — 2026-08-07
 
 ### Changed
