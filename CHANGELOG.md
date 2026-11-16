@@ -10,6 +10,10 @@ upgrading.
 
 ## [Unreleased]
 
+### Changed
+
+- Rebranded the display name to Fancy Dev Kit (README and package description). Package names, the npm scope, URLs and the `fancy-ui` MCP id are unchanged.
+
 ## 0.3.0 — 2026-10-24
 
 TAC can now manage an existing catalog, not just add to it, and can be run by
