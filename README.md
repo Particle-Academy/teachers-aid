@@ -9,6 +9,13 @@ Two things make this package what it is:
 - **It is LLM-library agnostic.** The agent, its tools and the plan model import no LLM library at all. One interface, `ChatDriver`, is where Prism, the Laravel AI SDK, the Vercel AI SDK or your own client plugs in.
 - **It cannot write.** The tools record proposals into a `ChangePlan`. Only `PlanApplier` touches the database, and only when a human hands it an approved plan.
 
+<!-- fancy-agents-note:start -->
+> **For agents.** This package is listed on the Fancy MCP catalog server at
+> `https://ui.particle.academy/mcp` (streamable HTTP, no API key; MCP id `fancy-ui`),
+> with install commands and docs, alongside the rest of the kit. How an agent
+> installs and uses this package is in [AGENTS.md](https://github.com/Particle-Academy/teachers-aid/blob/main/AGENTS.md).
+<!-- fancy-agents-note:end -->
+
 ## Install
 
 ```sh
