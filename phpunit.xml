@@ -16,5 +16,16 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- tests/TestCase.php builds an in-memory SQLite connection named
+             "testing"; forced here too so nothing can reach a real database. -->
+        <env name="DB_CONNECTION" value="testing" force="true"/>
+        <server name="DB_CONNECTION" value="testing" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <server name="DB_DATABASE" value=":memory:" force="true"/>
+        <!-- No provider keys, ever, in a test run. -->
+        <env name="ANTHROPIC_API_KEY" value="" force="true"/>
+        <env name="OPENAI_API_KEY" value="" force="true"/>
+        <server name="ANTHROPIC_API_KEY" value="" force="true"/>
+        <server name="OPENAI_API_KEY" value="" force="true"/>
     </php>
 </phpunit>

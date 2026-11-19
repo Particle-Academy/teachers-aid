@@ -172,7 +172,7 @@ An unknown tool name is reported back to the model rather than thrown — it is 
 
 ```sh
 composer install
-./vendor/bin/phpunit
+./vendor/bin/pest
 ```
 
 The suite needs no API key, no provider and no network: `tests/Fixtures/ScriptedDriver` replays a scripted conversation. That it can exist at all is the point of the `ChatDriver` seam.

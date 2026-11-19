@@ -81,10 +81,12 @@ Message (+ Attachment) → TeachersAid::respondTo() → TurnResult
 
 ```bash
 composer install
-vendor/bin/phpunit          # 42 tests
+vendor/bin/pest             # 43 tests
 ```
 
-The suite runs with **laravel-courses absent**, against stand-in models. That is
+The suite is Pest, on a hand-built Laravel host (`tests/TestCase.php`, on
+`laravel/framework` alone; no `orchestra/testbench`, which the owner declined).
+It runs with **laravel-courses absent**, against stand-in models. That is
 deliberate: it is the proof that entities really are host-configured rather than
 hard-wired. Keep it that way — adding laravel-courses to `require-dev` would
 quietly destroy the evidence.

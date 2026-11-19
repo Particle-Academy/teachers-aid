@@ -15,6 +15,7 @@ upgrading.
 - Rebranded the display name to Fancy Dev Kit (README and package description). Package names, the npm scope, URLs and the `fancy-ui` MCP id are unchanged.
 - **Docs:** `AGENTS.md` is now the guide to using this package (install, its entries on the Fancy MCP catalog server, API essentials, traps). The contributor notes it held moved to `CONTRIBUTING.md`, and `CLAUDE.md` is now a symlink to it. The README points to the MCP server and to `AGENTS.md`. No code changed; nothing to do.
 - CI: re-pin org third-party allowlist to 2614224
+- Tests moved to Pest; orchestra/testbench and phpunit/phpunit removed from require-dev. No runtime change. The suite now boots a hand-built Laravel host (`tests/TestCase.php`) on `laravel/framework`, added to `require-dev` as the framework this package integrates with (the integration-framework carve-out). `composer test` now exists and runs `pest`; CI runs `vendor/bin/pest`. Consumer action: none.
 
 ## 0.3.0 — 2026-10-24
 
